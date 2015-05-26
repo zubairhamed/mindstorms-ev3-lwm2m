@@ -3,7 +3,7 @@ package ev3
 import (
 	. "github.com/zubairhamed/go-lwm2m/api"
 	"github.com/zubairhamed/go-lwm2m/core"
-	"github.com/zubairhamed/go-lwm2m/objects/oma"
+	. "github.com/zubairhamed/go-lwm2m/objects/oma"
 	"github.com/zubairhamed/goap"
 	"time"
 	"os/exec"
@@ -13,10 +13,19 @@ import (
 
 type Device struct {
 	Model ObjectModel
-	Data  *core.ObjectsData
 }
 
 func (o *Device) OnExecute(instanceId int, resourceId int) goap.CoapCode {
+	log.Println("Calling device onExecute", instanceId, resourceId)
+	if resourceId == DEVICE_EXEC_REBOOT {
+		// Wait 3 seconds before rebooting
+		go func() {
+			timer := time.NewTimer(time.Second * 3)
+			<- timer.C
+
+			o.Reboot()
+		}()
+	}
 	return goap.COAPCODE_204_CHANGED
 }
 
@@ -106,31 +115,38 @@ func (o *Device) OnWrite(instanceId int, resourceId int) goap.CoapCode {
 }
 
 func (o *Device) GetManufacturer() string {
-	return o.Data.Get("/0/0").(string)
+	return "LEGO"
 }
 
 func (o *Device) GetModelNumber() string {
-	return o.Data.Get("/0/1").(string)
+	return "Lego Mindstorms EV3"
 }
 
 func (o *Device) GetSerialNumber() string {
-	return o.Data.Get("/0/2").(string)
+	return "12345"
 }
 
 func (o *Device) GetFirmwareVersion() string {
-	return o.Data.Get("/0/3").(string)
+	return "1.0"
 }
 
 func (o *Device) Reboot() ResponseValue {
+	// shutdown -r now
+	err := exec.Command("shutdown", "-r", "now").Run()
+	if err != nil {
+		log.Println(err)
+	}
+
 	return core.NewEmptyValue()
 }
 
 func (o *Device) FactoryReset() ResponseValue {
+	// unsupported
 	return core.NewEmptyValue()
 }
 
 func (o *Device) GetAvailablePowerSources() []int {
-	return []int{ 1 }
+	return []int{ POWERSOURCE_INTERNAL }
 }
 
 func (o *Device) GetPowerSourceVoltage() []int {
@@ -148,15 +164,17 @@ func (o *Device) GetPowerSourceVoltage() []int {
 }
 
 func (o *Device) GetPowerSourceCurrent() []int {
+	// /sys/class/power_supply/legoev3-battery/current_now
 	return []int{125, 900}
 }
 
 func (o *Device) GetBatteryLevel() int {
-	return o.Data.Get("/0/9").(int)
+	// Unknown
+	return 0
 }
 
 func (o *Device) GetMemoryFree() int {
-	return o.Data.Get("/0/10").(int)
+	return 0
 }
 
 func (o *Device) GetErrorCode() []int {
@@ -168,52 +186,24 @@ func (o *Device) ResetErrorCode() string {
 }
 
 func (o *Device) GetCurrentTime() time.Time {
-	return o.Data.Get("/0/13").(time.Time)
+	return time.Now()
 }
 
 func (o *Device) GetTimezone() string {
-	return o.Data.Get("/0/14").(string)
+	return "+8:00"
 }
 
 func (o *Device) GetUtcOffset() string {
-	return o.Data.Get("/0/15").(string)
+	return "+8:00"
 }
 
 func (o *Device) GetSupportedBindingMode() string {
-	return o.Data.Get("/0/16").(string)
+	return "U"
 }
 
 func NewDeviceObject(reg Registry) *Device {
-	data := &core.ObjectsData{
-		Data: make(map[string]interface{}),
-	}
-
-	data.Put("/0/0", "LEGO")
-	data.Put("/0/1", "Lego Mindstorms EV3")
-	data.Put("/0/2", "123456789")
-	data.Put("/0/3", "1.0")
-	data.Put("/0/6/0", 1)
-
-	// Get Voltage
-	data.Put("/0/7/0", 3800)
-	data.Put("/0/7/1", 5000)
-
-	data.Put("/0/8/0", 125)
-	data.Put("/0/8/1", 900)
-	data.Put("/0/9", 100)
-	data.Put("/0/10", 15)
-	data.Put("/0/11/0", 0)
-	data.Put("/0/13", time.Unix(1367491215, 0))
-	data.Put("/0/14", "+02:00")
-	data.Put("/0/15", "")
-	data.Put("/0/16", "U")
-
 	return &Device{
-		Model: reg.GetModel(oma.OBJECT_LWM2M_DEVICE),
-		Data:  data,
+		Model: reg.GetModel(OBJECT_LWM2M_DEVICE),
 	}
 }
 
-/*
-
-*/
