@@ -3,13 +3,13 @@ package ev3
 import (
 	. "github.com/zubairhamed/go-lwm2m/api"
 	"github.com/zubairhamed/go-lwm2m/core"
-	. "github.com/zubairhamed/go-lwm2m/objects/oma"
-	"time"
-	"os/exec"
-	"log"
-	"strconv"
-	"github.com/zubairhamed/go-lwm2m/core/values"
 	"github.com/zubairhamed/go-lwm2m/core/response"
+	"github.com/zubairhamed/go-lwm2m/core/values"
+	. "github.com/zubairhamed/go-lwm2m/objects/oma"
+	"log"
+	"os/exec"
+	"strconv"
+	"time"
 )
 
 type Device struct {
@@ -22,7 +22,7 @@ func (o *Device) OnExecute(instanceId int, resourceId int, req Request) Response
 		// Wait 3 seconds before rebooting
 		go func() {
 			timer := time.NewTimer(time.Second * 3)
-			<- timer.C
+			<-timer.C
 
 			o.Reboot()
 		}()
@@ -147,7 +147,7 @@ func (o *Device) FactoryReset() ResponseValue {
 }
 
 func (o *Device) GetAvailablePowerSources() []int {
-	return []int{ POWERSOURCE_INTERNAL }
+	return []int{POWERSOURCE_INTERNAL}
 }
 
 func (o *Device) GetPowerSourceVoltage() []int {
@@ -161,7 +161,7 @@ func (o *Device) GetPowerSourceVoltage() []int {
 	if e != nil {
 		log.Println(e)
 	}
-	return []int{ int(i/1000) }
+	return []int{int(i / 1000)}
 }
 
 func (o *Device) GetPowerSourceCurrent() []int {
@@ -207,4 +207,3 @@ func NewDeviceObject(reg Registry) *Device {
 		Model: reg.GetModel(OBJECT_LWM2M_DEVICE),
 	}
 }
-
